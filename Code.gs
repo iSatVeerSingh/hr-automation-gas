@@ -6,7 +6,7 @@
 
 const sendBirthdayNotifications = () => {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const employeesheet = spreadsheet.getSheetByName(EMPLOYEES_SHEET);
+  const empsheet = spreadsheet.getSheetByName(EMPLOYEES_SHEET);
   const settingsheet = spreadsheet.getSheetByName(SETTINGS_SHEET);
 
   const emplastrow = employeesheet.getLastRow();
@@ -30,6 +30,10 @@ const sendBirthdayNotifications = () => {
 
   for (let emp of employees) {
     const [name, email, birthdayStr] = emp;
+
+    if (name.toString().trim() === "") {
+      continue;
+    }
 
     const birthday = parseDate(birthdayStr);
     const thisYearBirthday = new Date(
@@ -71,6 +75,91 @@ const sendBirthdayNotifications = () => {
 
       for (let hr of hrEmails) {
         sendEmail(hr, subject, body);
+      }
+    }
+  }
+};
+
+/**
+ * Sends quarterly leave reminders to employees and HR.
+ */
+const sendQuarterlyLeaveReminders = () => {
+  const env = PropertiesService.getScriptProperties().getProperty("ENV");
+
+  if (env === "production") {
+    if (!isTodayQuarterlyReminderDate()) return;
+  } else {
+    Logger.log(
+      `Note: The script is running development mode. This mode is only for development and testing purpose. Please change the script property "ENV" to 'production' in project setting.`
+    );
+  }
+
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const empsheet = spreadsheet.getSheetByName(EMPLOYEES_SHEET);
+  const settingsheet = spreadsheet.getSheetByName(SETTINGS_SHEET);
+
+  const emplastrow = empsheet.getLastRow();
+  const employees = empsheet.getRange(`A2:H${emplastrow}`).getValues();
+
+  const hrEmails = settingsheet
+    .getRange("A2:B")
+    .getValues()
+    .filter((row) => row[0].toString().trim() !== "")
+    .map((row) => row[1]);
+  const emailTemplates = settingsheet.getRange("E2:G").getValues();
+
+  const quarterlyAlReminderEmail = emailTemplates.find(
+    (row) => row[0].toString().trim() === "QUARTERLY_AL_REMINDER"
+  );
+  const obligatoryALReminder = emailTemplates.find(
+    (row) => row[0].toString().trim() === "HR_OBLIGATORY_AL_REMINDER"
+  );
+
+  const alRequestForm =
+    PropertiesService.getScriptProperties().getProperty("AL_REQUEST_FORM");
+
+  for (let emp of employees) {
+    const [
+      name,
+      email,
+      _birthdayStr,
+      _joinDateStr,
+      totalLeaves,
+      leavesUsed,
+      remainingLeaves,
+    ] = emp;
+
+    if (name.toString().trim() === "") {
+      continue;
+    }
+
+    const subject = quarterlyAlReminderEmail[1]
+      .toString()
+      .replace(/\[EMP_NAME\]/gi, name);
+
+    const body = quarterlyAlReminderEmail[2]
+      .toString()
+      .replace(/\[EMP_NAME\]/gi, name)
+      .replace(/\[AL_REQUEST_FORM\]/gi, alRequestForm)
+      .replace(/\[TOTAL_AL\]/gi, totalLeaves || 0)
+      .replace(/\[AL_USED\]/gi, leavesUsed || 0)
+      .replace(/\[AL_REMAINING\]/gi, remainingLeaves || 0);
+
+    sendEmail(email, subject, body);
+
+    if (parseInt(leavesUsed || 0) < 14) {
+      const hrSubject = obligatoryALReminder[1]
+        .toString()
+        .replace(/\[EMP_NAME\]/gi, name);
+      const hrBody = obligatoryALReminder[2]
+        .toString()
+        .replace(/\[EMP_NAME\]/gi, name)
+        .replace(/\[TOTAL_AL\]/gi, totalLeaves || 0)
+        .replace(/\[AL_USED\]/gi, leavesUsed || 0)
+        .replace(/\[AL_REMAINING\]/gi, remainingLeaves || 0);
+
+      for (let hr of hrEmails) {
+        sendEmail(hr, hrSubject, hrBody);
       }
     }
   }

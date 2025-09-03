@@ -58,3 +58,13 @@ const sendEmail = (email, subject, body) => {
     name: EMAIL_SENDER,
   });
 };
+
+/**
+ * Checks if today is the quarterly reminder date (1st of Mar, Jun, Sep, Dec).
+ */
+const isTodayQuarterlyReminderDate = () => {
+  const today = new Date();
+  const month = today.getMonth();
+  const day = today.getDate();
+  return day === 1 && [2, 5, 8, 11].includes(month); // Mar, Jun, Sep, Dec
+};
