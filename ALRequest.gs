@@ -223,12 +223,14 @@ const sendAndUpdateALRequest = ({
             ]);
         }
 
-        break;
+        return {
+          message: `${leaveType} request submitted successfully. You can now close this window.`,
+        };
       }
     }
-
     return {
-      message: `${leaveType} request submitted successfully. You can now close this window.`,
+      error:
+        "Something went wrong. Could not submit the request. Please contact HR Department.",
     };
   } catch (err) {
     Logger.log(err);
