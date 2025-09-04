@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 40px auto;
+      background: #f5f5f5;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    h1, h2 {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #888;
+    }
+
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    button .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-left: 8px;
+      border: 2px solid #fff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Sino Services HR Department</h1>
+  <h2>Leave Request Portal</h2>
+
+  <!-- Phase 1: Email prompt -->
+  <div id="emailSection">
+    <label for="emailInput">Enter your work email</label>
+    <input type="email" id="emailInput" placeholder="you@company.com" required />
+    <button id="loadFormBtn" onclick="loadForm()">Continue</button>
+    <div id="emailError" style="color: red; text-align: center;"></div>
+  </div>
+
+  <!-- Phase 2: Full leave form -->
+  <form id="leaveForm" class="hidden">
+    <label for="empName">Employee Name</label>
+    <input type="text" id="empName" name="empName" readonly />
+    <input type="hidden" id="empEmail" name="empEmail" />
+
+    <label for="startDate">Start Date</label>
+    <input type="date" id="startDate" required />
+
+    <label for="daysCount">How Many Days</label>
+    <input type="number" id="daysCount" min="1" required />
+
+    <label for="leaveType">Type of Leave</label>
+    <select id="leaveType" required>
+        <option value="">Select Leave Type</option>
+        <option value="Annual Leave">Annual Leave</option>
+        <option value="Compensatory Days Off">Compensatory Days Off</option>
+      </select>
+
+    <label for="responsibleColleague">Responsible Colleague</label>
+    <select id="responsibleColleague">
+        <option value="">Select a Colleague</option>
+      </select>
+
+    <label for="teamLead">Approving Team Lead</label>
+    <select id="teamLead" required>
+        <option value="">Select Team Lead</option>
+      </select>
+
+    <label for="vacationType">Type of Vacation</label>
+    <select id="vacationType" required>
+        <option value="Paid" selected>Paid</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
+
+    <button type="submit" id="submitBtn">Submit</button>
+  </form>
+
+  <div id="status"></div>
+
+  <script>
+    function loadForm() {
+        const email = document.getElementById("emailInput").value.trim();
+        const errorDiv = document.getElementById("emailError");
+        errorDiv.textContent = "";
+
+        if (!email) {
+          errorDiv.textContent = "Please enter a valid email.";
+          return;
+        }
+
+        const btn = document.getElementById("loadFormBtn");
+        btn.disabled = true;
+        btn.innerHTML = 'Getting AL Request Form... <span class="spinner"></span>';
+
+        google.script.run
+          .withSuccessHandler((data) => {
+            // Populate form with fetched data
+            document.getElementById("empName").value = data.empName;
+            document.getElementById("empEmail").value = data.empEmail;
+
+            const colleagueSelect = document.getElementById("responsibleColleague");
+            colleagueSelect.innerHTML = `<option value="">Select a Colleague</option>`;
+            data.colleagues.forEach((col) => {
+              const opt = document.createElement("option");
+              opt.value = col;
+              opt.textContent = col;
+              colleagueSelect.appendChild(opt);
+            });
+
+            const teamLeadSelect = document.getElementById("teamLead");
+            teamLeadSelect.innerHTML = `<option value="">Select Team Lead</option>`;
+            data.teamLeads.forEach((lead) => {
+              const opt = document.createElement("option");
+              opt.value = lead.email;
+              opt.textContent = lead.name;
+              teamLeadSelect.appendChild(opt);
+            });
+
+            document.getElementById("emailSection").classList.add("hidden");
+            document.getElementById("leaveForm").classList.remove("hidden");
+          })
+          .withFailureHandler((err) => {
+            errorDiv.textContent = err.message || "Failed to fetch employee data.";
+            btn.disabled = false;
+            btn.innerHTML = "Continue";
+          })
+          .getEmployeeData(email);
+      }
+
+      // Handle leave form submission
+      document.getElementById("leaveForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const btn = document.getElementById("submitBtn");
+        btn.disabled = true;
+        btn.innerHTML = 'Submitting... <span class="spinner"></span>';
+
+        const formData = {
+          empName: document.getElementById("empName").value,
+          empEmail: document.getElementById("empEmail").value,
+          startDate: document.getElementById("startDate").value,
+          daysCount: document.getElementById("daysCount").value,
+          leaveType: document.getElementById("leaveType").value,
+          responsibleColleague: document.getElementById("responsibleColleague").value,
+          teamLead: document.getElementById("teamLead").value,
+          vacationType: document.getElementById("vacationType").value,
+        };
+
+        google.script.run
+          .withSuccessHandler((data) => {
+            btn.disabled = false;
+            btn.innerHTML = "Submit";
+            document.getElementById("leaveForm").reset();
+            if(data.error) {
+              document.getElementById("status").textContent = data.error;
+              document.getElementById("status").style.color = "red";
+            } else {
+              document.getElementById("status").textContent = data.message;
+              document.getElementById("status").style.color = "green";
+            }
+          })
+          .withFailureHandler((err) => {
+            document.getElementById("status").textContent = "Error: " + err.message;
+            document.getElementById("status").style.color = "red";
+            btn.disabled = false;
+            btn.textContent = "Submit";
+          })
+          .sendAndUpdateALRequest(formData);
+      });
+  </script>
+</body>
+
+</html>
