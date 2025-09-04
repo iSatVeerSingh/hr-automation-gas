@@ -220,3 +220,13 @@ const manageAnnualLeaves = () => {
     }
   }
 };
+
+/**
+ * Main wrapper function for automatic trigger
+ */
+
+const autoTriggerMainFunction = () => {
+  sendBirthdayNotifications();
+  sendQuarterlyLeaveReminders();
+  manageAnnualLeaves();
+};
