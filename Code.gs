@@ -44,7 +44,7 @@ const sendBirthdayNotifications = () => {
 
     const thisYearBirthdayFormatted = getFormattedDate(thisYearBirthday);
 
-    if (isSameDay(today, thisYearBirthday)) {
+    if (isSameDayMonth(today, thisYearBirthday)) {
       const colleagues = employees
         .filter((e) => e[1] !== email)
         .map((e) => e[1]);
@@ -64,7 +64,7 @@ const sendBirthdayNotifications = () => {
 
     const notifydate = getPreviousWorkingDay(thisYearBirthday);
 
-    if (isSameDay(today, notifydate)) {
+    if (isSameDayMonth(today, notifydate)) {
       const subject = birthdayHREmail[1]
         .toString()
         .replace(/\[EMP_NAME\]/gi, name);
@@ -161,6 +161,67 @@ const sendQuarterlyLeaveReminders = () => {
       for (let hr of hrEmails) {
         sendEmail(hr, hrSubject, hrBody);
       }
+    }
+  }
+};
+
+const manageAnnualLeaves = () => {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const empsheet = spreadsheet.getSheetByName(EMPLOYEES_SHEET);
+  const settingsheet = spreadsheet.getSheetByName(SETTINGS_SHEET);
+
+  const emplastrow = empsheet.getLastRow();
+  const employees = empsheet.getRange(`A2:H${emplastrow}`).getValues();
+
+  const emailTemplates = settingsheet.getRange("E2:G").getValues();
+
+  const alResetAnniversaryEmail = emailTemplates.find(
+    (row) => row[0].toString().trim() === "AL_RESET_ANNIVERSARY"
+  );
+
+  const sixMonthsEmail = emailTemplates.find(
+    (row) => row[0].toString().trim() === "SIX_MONTH_AL_REMINDER"
+  );
+
+  const alRequestForm =
+    PropertiesService.getScriptProperties().getProperty("AL_REQUEST_FORM");
+
+  for (let i = 0; i < employees.length; i++) {
+    const [name, email, _birthdayStr, joinDateStr] = employees[i];
+
+    if (name.toString().trim() === "") {
+      continue;
+    }
+
+    const joinDate = parseDate(joinDateStr);
+
+    if (isSixMonthComplete(joinDate)) {
+      empsheet.getRange(`E${i + 2}:G${i + 2}`).setValues([[21, 0, 21]]);
+
+      const subject = sixMonthsEmail[1]
+        .toString()
+        .replace(/\[EMP_NAME\]/gi, name);
+
+      const body = sixMonthsEmail[2]
+        .toString()
+        .replace(/\[EMP_NAME\]/gi, name)
+        .replace(/\[AL_REQUEST_FORM\]/gi, alRequestForm);
+
+      sendEmail(email, subject, body);
+    }
+
+    if (isAnniversary(joinDate)) {
+      empsheet.getRange(`E${i + 2}:G${i + 2}`).setValues([[21, 0, 21]]);
+      const subject = alResetAnniversaryEmail[1]
+        .toString()
+        .replace(/\[EMP_NAME\]/gi, name);
+
+      const body = alResetAnniversaryEmail[2]
+        .toString()
+        .replace(/\[EMP_NAME\]/gi, name)
+        .replace(/\[AL_REQUEST_FORM\]/gi, alRequestForm);
+
+      sendEmail(email, subject, body);
     }
   }
 };
