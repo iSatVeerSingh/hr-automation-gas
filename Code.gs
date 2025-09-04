@@ -7,7 +7,7 @@ const sendBirthdayNotifications = () => {
   const empsheet = spreadsheet.getSheetByName(EMPLOYEES_SHEET);
   const settingsheet = spreadsheet.getSheetByName(SETTINGS_SHEET);
 
-  const emplastrow = employeesheet.getLastRow();
+  const emplastrow = empsheet.getLastRow();
   const employees = empsheet.getRange(`A2:H${emplastrow}`).getValues();
   const hrEmails = settingsheet
     .getRange("A2:B")
