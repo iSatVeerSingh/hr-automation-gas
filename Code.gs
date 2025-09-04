@@ -1,5 +1,3 @@
-// Main HR Automation logic for notifications, reminders and annual leave requests
-
 /**
  * Send birthday notifications / reminders to colleagues and HR
  */
@@ -44,7 +42,7 @@ const sendBirthdayNotifications = () => {
 
     const thisYearBirthdayFormatted = getFormattedDate(thisYearBirthday);
 
-    if (isSameDayMonth(today, thisYearBirthday)) {
+    if (isSameDayMonthYear(today, thisYearBirthday)) {
       const colleagues = employees
         .filter((e) => e[1] !== email)
         .map((e) => e[1]);
@@ -64,7 +62,7 @@ const sendBirthdayNotifications = () => {
 
     const notifydate = getPreviousWorkingDay(thisYearBirthday);
 
-    if (isSameDayMonth(today, notifydate)) {
+    if (isSameDayMonthYear(today, notifydate)) {
       const subject = birthdayHREmail[1]
         .toString()
         .replace(/\[EMP_NAME\]/gi, name);
@@ -84,15 +82,7 @@ const sendBirthdayNotifications = () => {
  * Sends quarterly leave reminders to employees and HR.
  */
 const sendQuarterlyLeaveReminders = () => {
-  const env = PropertiesService.getScriptProperties().getProperty("ENV");
-
-  if (env === "production") {
-    if (!isTodayQuarterlyReminderDate()) return;
-  } else {
-    Logger.log(
-      `Note: The script is running development mode. This mode is only for development and testing purpose. Please change the script property "ENV" to 'production' in project setting.`
-    );
-  }
+  if (!isTodayQuarterlyReminderDate()) return;
 
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const empsheet = spreadsheet.getSheetByName(EMPLOYEES_SHEET);
@@ -164,6 +154,11 @@ const sendQuarterlyLeaveReminders = () => {
     }
   }
 };
+
+/**
+ * Send notification when employee completes 6 months
+ * When employee has an anniversary, resert the annual leaves
+ */
 
 const manageAnnualLeaves = () => {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
