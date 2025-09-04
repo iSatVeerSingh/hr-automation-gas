@@ -20,4 +20,23 @@ Step 4.
 -- Go to 'Project Setting' in left sidebar
 -- In script properties, set 'Property' input to "AL_REQUEST_FORM" and 'Value' input to the Web App link you copied in above.
 -- Save the properties.
+
+*** How to setup automatic trigger to run functions on daily basis ***
+
+Step 1.
+-- Go to 'Triggers' in left sidebar
+
+Step 2. 
+-- Click on 'Add Trigger'
+
+Step 3.
+-- Choose which function to run = "autoTriggerMainFunction"
+-- Choose which deployment should run = "Head"
+-- Select event source = "Time-Driven"
+-- Select type of time-based trigger = "Day Timer"
+-- Select time of day = <select time according to your preference>
+-- Click on 'Save'
+
+You should see a time driven trigger has created with function "autoTriggerMainFunction".
+
  -->
