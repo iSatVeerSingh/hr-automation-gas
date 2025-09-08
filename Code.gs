@@ -207,6 +207,7 @@ const manageAnnualLeaves = () => {
 
     if (isAnniversary(joinDate)) {
       empsheet.getRange(`E${i + 2}:G${i + 2}`).setValues([[21, 0, 21]]);
+      const years = anniversaryYears(joinDate);
       const subject = alResetAnniversaryEmail[1]
         .toString()
         .replace(/\[EMP_NAME\]/gi, name);
@@ -214,6 +215,7 @@ const manageAnnualLeaves = () => {
       const body = alResetAnniversaryEmail[2]
         .toString()
         .replace(/\[EMP_NAME\]/gi, name)
+        .replace(/\[ANNIVERSARY_YEARS\]/gi, years)
         .replace(/\[AL_REQUEST_FORM\]/gi, alRequestForm);
 
       sendEmail(email, subject, body);
